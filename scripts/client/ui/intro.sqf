@@ -1,5 +1,3 @@
-private [ "_dialog" ];
-
 if ( isNil "cinematic_camera_started" ) then { cinematic_camera_started = false };
 sleep 0.5;
 waitUntil { time > 0 };
@@ -19,7 +17,7 @@ if ( GRLIB_introduction ) then {
 showcaminfo = true;
 dostartgame = 0;
 howtoplay = 0;
-_dialog = createDialog "liberation_menu";
+private _dialog = createDialog "liberation_menu";
 waitUntil { dialog };
 waitUntil { dostartgame == 1 || howtoplay == 1 || !dialog };
 

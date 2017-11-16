@@ -1,6 +1,5 @@
 class kndr_MapControl
 {
-	access = 0;
 	idc = 10023;
 	type = CT_MAP_MAIN;
 	style = ST_PICTURE;
@@ -277,6 +276,20 @@ class kndr_MapControl
 		coefMin = 0.90;
 		coefMax = 4.00;
 	};
+	class LineMarker {
+		icon = "";
+		color[] = {0,0,0,0};
+		size = 0;
+		importance = "2 * 16 * 0.05";
+		coefMin = 0;
+		coefMax = 0;
+		lineWidthThin = 0;
+		lineWidthThick = 0;
+		lineDistanceMin = 0;
+		lineDistanceMax = 0;
+		lineLengthMin = 0;
+		linelengthMax = 0;
+	};
 	class PowerWind {
 		icon = "";
 		color[] = {0.00, 0.35, 0.70, 1.00};
@@ -500,4 +513,26 @@ class StdCombo {
 		arrowFull = "\A3\ui_f\data\gui\cfg\scrollbar\arrowFull_ca.paa";
 		border = "\A3\ui_f\data\gui\cfg\scrollbar\border_ca.paa";
 	};
+};
+
+class StdEdit {
+	idc = -1;
+	type = CT_EDIT;
+	style = ST_RIGHT+ST_FRAME;
+	default = false;
+	font = FontM;
+	sizeEx = 0.018 * safezoneH;
+	colorText[] = COLOR_WHITE;
+	colorSelection[] = COLOR_LIGHTGRAY;
+	colorDisabled[] = COLOR_LIGHTGRAY;
+	colorBackground[] = COLOR_GREEN_NOALPHA;
+	colorBackgroundDisabled[] = COLOR_GREEN;
+	colorBackgroundActive[] = COLOR_GREEN_NOALPHA;
+	x = 0;
+	y = 0;
+	w = 0.3;
+	h = (0.02 * safezoneH);
+	text = "";
+	autocomplete = "";
+	shadow = 0;
 };

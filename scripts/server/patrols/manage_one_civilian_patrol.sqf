@@ -13,37 +13,37 @@ while { GRLIB_endgame == 0 } do {
 	_spawnsector = "";
 	_usable_sectors = [];
 	{
-		if ( ( ( [ getmarkerpos _x , 1000 , WEST ] call F_getUnitsCount ) == 0 ) && ( count ( [ getmarkerpos _x , 3500 ] call F_getNearbyPlayers ) > 0 ) ) then {
+		if ( ( ( [ getmarkerpos _x , 1000 , GRLIB_side_friendly ] call F_getUnitsCount ) == 0 ) && ( count ( [ getmarkerpos _x , 3500 ] call F_getNearbyPlayers ) > 0 ) ) then {
 			_usable_sectors pushback _x;
 		}
 
 	} foreach ((sectors_bigtown + sectors_capture + sectors_factory) - (active_sectors));
 
 	if ( count _usable_sectors > 0 ) then {
-		_spawnsector = _usable_sectors call BIS_fnc_selectRandom;
+		_spawnsector = selectRandom _usable_sectors;
 
-		_grp = createGroup CIVILIAN;
+		_grp = createGroup GRLIB_side_civilian;
 		if ( random 100 < 33) then {
 			_civnumber = 1 + (floor (random 2));
 			while { count units _grp < _civnumber } do {
-				( civilians call BIS_fnc_selectRandom ) createUnit [ markerpos _spawnsector, _grp, "this addMPEventHandler [""MPKilled"", {_this spawn kill_manager}]", 0.5, "private"];
+				(selectRandom civilians) createUnit [ markerpos _spawnsector, _grp, "this addMPEventHandler [""MPKilled"", {_this spawn kill_manager}]", 0.5, "private"];
 			};
 			_grpspeed = "LIMITED";
 		} else {
 
 			_nearestroad = objNull;
 			while { isNull _nearestroad } do {
-				_nearestroad = [ [  getmarkerpos (_spawnsector), random(100), random(360)  ] call BIS_fnc_relPos, 200, [] ] call BIS_fnc_nearestRoad;
+				_nearestroad = [[getmarkerpos (_spawnsector), random (100), random (360)] call BIS_fnc_relPos, 200, []] call BIS_fnc_nearestRoad;
 				sleep 1;
 			};
 
 			_spawnpos = getpos _nearestroad;
 
-			( civilians call BIS_fnc_selectRandom ) createUnit [ _spawnpos, _grp, "this addMPEventHandler [""MPKilled"", {_this spawn kill_manager}]", 0.5, "private"];
-			_civveh = ( civilian_vehicles call BIS_fnc_selectRandom ) createVehicle _spawnpos;
+			(selectRandom civilians) createUnit [_spawnpos, _grp, "this addMPEventHandler [""MPKilled"", {_this spawn kill_manager}]", 0.5, "private"];
+			_civveh = (selectRandom civilian_vehicles) createVehicle _spawnpos;
 			_civveh setpos _spawnpos;
 			_civveh addMPEventHandler ['MPKilled', {_this spawn kill_manager}];
-			_civveh addEventHandler ["HandleDamage", { private [ "_damage" ]; if (( side (_this select 3) != WEST ) && ( side (_this select 3) != EAST )) then { _damage = 0 } else { _damage = _this select 2 }; _damage } ];
+			_civveh addEventHandler ["HandleDamage", { private [ "_damage" ]; if (( side (_this select 3) != GRLIB_side_friendly ) && ( side (_this select 3) != GRLIB_side_enemy )) then { _damage = 0 } else { _damage = _this select 2 }; _damage } ];
 			((units _grp) select 0) moveInDriver _civveh;
 			((units _grp) select 0) disableAI "FSM";
 			((units _grp) select 0) disableAI "AUTOCOMBAT";
@@ -51,7 +51,7 @@ while { GRLIB_endgame == 0 } do {
 
 		};
 
-		{ _x addEventHandler ["HandleDamage", { private [ "_damage" ]; if (( side (_this select 3) != WEST ) && ( side (_this select 3) != EAST )) then { _damage = 0 } else { _damage = _this select 2 }; _damage } ]; } foreach units _grp;
+		{ _x addEventHandler ["HandleDamage", { private [ "_damage" ]; if (( side (_this select 3) != GRLIB_side_friendly ) && ( side (_this select 3) != GRLIB_side_enemy )) then { _damage = 0 } else { _damage = _this select 2 }; _damage } ]; } foreach units _grp;
 
 		_sectors_patrol = [];
 		_patrol_startpos = getpos (leader _grp);
@@ -64,7 +64,7 @@ while { GRLIB_endgame == 0 } do {
 		_sectors_patrol_random = [];
 		_sectorcount = count _sectors_patrol;
 		while { count _sectors_patrol_random < _sectorcount } do {
-			_nextsector = _sectors_patrol call BIS_fnc_selectRandom;
+			_nextsector = selectRandom _sectors_patrol;
 			_sectors_patrol_random pushback _nextsector;
 			_sectors_patrol = _sectors_patrol - [_nextsector];
 
@@ -106,7 +106,7 @@ while { GRLIB_endgame == 0 } do {
 			if ( count ( [ getpos leader _grp , 4000 ] call F_getNearbyPlayers ) == 0 ) then {
 
 				if ( !(isNull _civveh) ) then {
-					 if ( { ( alive _x ) && (side group _x == WEST ) } count (crew _civveh) == 0 ) then {
+					 if ( { ( alive _x ) && (side group _x == GRLIB_side_friendly ) } count (crew _civveh) == 0 ) then {
 						deleteVehicle _civveh
 					};
 				};

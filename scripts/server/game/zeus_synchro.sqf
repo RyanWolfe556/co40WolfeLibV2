@@ -1,6 +1,6 @@
 waitUntil { !isNil "huron_typename" };
 
-_vehicleClassnames = [huron_typename];
+_vehicleClassnames = [huron_typename] + KP_liberation_crates;
 
 
 {
@@ -13,13 +13,20 @@ while { true } do {
 
 	_zeusunits = [];
 	{
-		if ( (side group _x == WEST ) && ( _x distance lhd > 1000 ) && alive _x ) then {
-			_zeusunits pushback _x;
+		if ((side group _x == GRLIB_side_friendly) && (_x distance startbase > 1000) && alive _x) then {
+			// Arty Supp deactivated for now
+			/*if !(isNil "BIS_SUPP_HQ_WEST") then {
+				if !(_x == BIS_SUPP_HQ_WEST) then {
+					_zeusunits pushback _x;
+				};
+			} else {*/
+				_zeusunits pushback _x;
+			//};
 		};
 	} foreach allUnits;
 
 	{
-		if ((typeof _x in _vehicleClassnames ) && (typeof _x != ammobox_o_typename) && (( _x distance lhd > 1000 ) || (typeof _x == huron_typename)) && alive _x ) then {
+		if (((typeof _x in _vehicleClassnames) || (_x getVariable ["GRLIB_captured", 0] == 1)) && ((_x distance startbase > 1000) && (isNull attachedTo _x) || (typeof _x == huron_typename)) && alive _x ) then {
 			_zeusunits pushback _x;
 		};
 	} foreach vehicles;
@@ -30,7 +37,7 @@ while { true } do {
 
 	_units_to_remove = [];
 	{
-		if ( !(alive _x) ) then {
+		if ( !(alive _x) || !(isNull attachedTo _x)) then {
 			_units_to_remove pushback _x;
 		};
 	} foreach (curatorEditableObjects (allCurators select 0));
@@ -40,11 +47,11 @@ while { true } do {
 		_zgm addCuratorEditableObjects [_zeusunits,true];
 		_zgm removeCuratorEditableObjects [_units_to_remove,true];
 
-		_zgm setCuratorCoef ["edit", 0]; 
-		_zgm setCuratorCoef ["place", 0]; 
-		_zgm setCuratorCoef ["synchronize", 0];
-		_zgm setCuratorCoef ["delete", 0];
-		_zgm setCuratorCoef ["destroy", 0];
+		_zgm  setCuratorCoef ["edit", -1e8];
+		_zgm  setCuratorCoef ["place", -1e8];
+		_zgm  setCuratorCoef ["synchronize", 0];
+		_zgm  setCuratorCoef ["delete", 0];
+		_zgm  setCuratorCoef ["destroy", -1e8];
 
 	} foreach allCurators;
 

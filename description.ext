@@ -1,50 +1,30 @@
 respawn = 3;
 respawndelay = 5;
+respawnButton = 1;
 disabledAI = true;
 
 enableDebugConsole = 1;
 allowFunctionsLog = 0;
 
 loadScreen="res\liberation.jpg";
-onLoadMission = $STR_MISSION_TITLE;
-author = "[GREUH] Zbug, [GREUH] McKeewa - Modified by R.Wolfe";
+onLoadMission = "www.killahpotatoes.de";
+author = "[GREUH] Zbug, [GREUH] McKeewa, [KP] Wyqer";
 onLoadName = $STR_MISSION_TITLE;
 
-disableChannels[]  = {{0,false,true},{1,false,true},{2,true,true},{3,true,true},{4,true,true},{5,false,true}};
-
-joinUnassigned = 0;
-
-onCheat = "player say3D winner";
-
-class Header
-{
-	gameType = CTI;
-	minPlayers = 1;
-	maxPlayers = 41;
-};
+joinUnassigned = 1;
 
 #include "GREUH\UI\GREUH_interface.hpp"
 #include "ui\liberation_interface.hpp"
 #include "ui\liberation_notifications.hpp"
 #include "ui\mission_params.hpp"
 
-#include "infiSTAR_AdminMenu.hpp"
-
 class CfgDebriefing
 {
 	class End1
 	{
 		title =	$STR_SORRY;
-		subtitle = "Have a talk with Wolfe about it.";
+		subtitle = "";
 		description = $STR_COMMANDER_NOT_AUTHORIZED;
-		pictureBackground = "";
-	};
-	
-	class End2
-	{
-		title =	$STR_SORRY;
-		subtitle = "Have a talk with Wolfe about it.";
-		description = $STR_NOT_AUTHORIZED;
 		pictureBackground = "";
 	};
 };

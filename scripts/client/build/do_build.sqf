@@ -4,6 +4,7 @@ build_confirmed = 0;
 _maxdist = GRLIB_fob_range;
 _truepos = [];
 _debug_colisions = false;
+KP_vector = true;
 
 GRLIB_preview_spheres = [];
 while { count GRLIB_preview_spheres < 36 } do {
@@ -30,34 +31,43 @@ while { true } do {
 		_classname = FOB_typename;
 	} else {
 		_classname = ((build_lists select buildtype) select buildindex) select 0;
-		_price = ((build_lists select buildtype) select buildindex) select 2;
-		[ [ _price, _classname, buildtype ] , "build_remote_call" ] call BIS_fnc_MP;
+		_price_s = ((build_lists select buildtype) select buildindex) select 1;
+		_price_a = ((build_lists select buildtype) select buildindex) select 2;
+		_price_f = ((build_lists select buildtype) select buildindex) select 3;
+		
+		_nearfob = [] call F_getNearestFob;
+		_storage_areas = [_nearfob nearobjects (GRLIB_fob_range * 2), {(_x getVariable ["KP_liberation_storage_type",-1]) == 0}] call BIS_fnc_conditionalSelect;
+		
+		[_price_s, _price_a, _price_f, _classname, buildtype, _storage_areas] remoteExec ["build_remote_call",2];
 	};
 
 	if(buildtype == 1) then {
 		_pos = [(getpos player select 0) + 1,(getpos player select 1) + 1, 0];
 		_grp = group player;
 		if ( manned ) then {
-			_grp = createGroup WEST;
+			_grp = createGroup GRLIB_side_friendly;
 		};
 		_classname createUnit [_pos, _grp,"this addMPEventHandler [""MPKilled"", {_this spawn kill_manager}]", 0.5, "private"];
 		build_confirmed = 0;
 	} else {
 		if ( buildtype == 8 ) then {
 			_pos = [(getpos player select 0) + 1,(getpos player select 1) + 1, 0];
-			_grp = createGroup WEST;
+			_grp = createGroup GRLIB_side_friendly;
 			_grp setGroupId [format ["%1 %2",squads_names select buildindex, groupId _grp]];
 			_idx = 0;
 			{
 				_unitrank = "private";
 				if(_idx == 0) then { _unitrank = "sergeant"; };
 				if(_idx == 1) then { _unitrank = "corporal"; };
-				_x createUnit [_pos, _grp,"this addMPEventHandler [""MPKilled"", {_this spawn kill_manager}]", 0.5, _unitrank];
+				if (_classname isEqualTo blufor_squad_para) then {
+					_x createUnit [_pos, _grp,"this addMPEventHandler [""MPKilled"", {_this spawn kill_manager}]; removeBackpackGlobal this; this addBackpackGlobal ""B_parachute""", 0.5, _unitrank];
+				} else {
+					_x createUnit [_pos, _grp,"this addMPEventHandler [""MPKilled"", {_this spawn kill_manager}];", 0.5, _unitrank];
+				};
 				_idx = _idx + 1;
 
 			} foreach _classname;
-			_grp setCombatMode "GREEN";
-			_grp setBehaviour "AWARE";
+			_grp setBehaviour "SAFE";
 			build_confirmed = 0;
 		} else {
 			_posfob = getpos player;
@@ -68,14 +78,16 @@ while { true } do {
 			_idactcancel = -1;
 			_idactsnap = -1;
 			_idactplacebis = -1;
+			_idactvector = -1;
 			if (buildtype != 99 ) then {
 				_idactcancel = player addAction ["<t color='#B0FF00'>" + localize "STR_CANCEL" + "</t> <img size='2' image='res\ui_cancel.paa'/>","scripts\client\build\build_cancel.sqf","",-725,false,true,"","build_confirmed == 1"];
 			};
 			if (buildtype == 6 ) then {
 				_idactplacebis = player addAction ["<t color='#B0FF00'>" + localize "STR_PLACEMENT_BIS" + "</t> <img size='2' image='res\ui_confirm.paa'/>","scripts\client\build\build_place_bis.sqf","",-785,false,false,"","build_invalid == 0 && build_confirmed == 1"];
 			};
-			if (buildtype == 6 || buildtype == 99) then {
+			if (buildtype == 6 || buildtype == 99  || _classname in KP_liberation_storage_buildings || _classname == KP_liberation_recycle_building || _classname == KP_liberation_air_vehicle_building) then {
 				_idactsnap = player addAction ["<t color='#B0FF00'>" + localize "STR_GRID" + "</t>","scripts\client\build\do_grid.sqf","",-735,false,false,"","build_confirmed == 1"];
+				_idactvector = player addAction ["<t color='#B0FF00'>" + localize "STR_VECACTION" + "</t>",{KP_vector = !KP_vector;},"",-800,false,false,"","build_confirmed == 1"];
 			};
 			_idactrotate = player addAction ["<t color='#B0FF00'>" + localize "STR_ROTATION" + "</t> <img size='2' image='res\ui_rotation.paa'/>","scripts\client\build\build_rotate.sqf","",-750,false,false,"","build_confirmed == 1"];
 			_idactplace = player addAction ["<t color='#B0FF00'>" + localize "STR_PLACEMENT" + "</t> <img size='2' image='res\ui_confirm.paa'/>","scripts\client\build\build_place.sqf","",-775,false,true,"","build_invalid == 0 && build_confirmed == 1"];
@@ -86,10 +98,11 @@ while { true } do {
 			_vehicle allowdamage false;
 			_vehicle setVehicleLock "LOCKED";
 			_vehicle enableSimulationGlobal false;
+			_vehicle setVariable ["KP_liberation_preplaced", true, true];
 
 			_dist = 0.6 * (sizeOf _classname);
 			if (_dist < 3.5) then { _dist = 3.5 };
-			_dist = _dist + 0.5;
+			_dist = _dist + 1;
 
 			for [{_i=0}, {_i<5}, {_i=_i+1}] do {
 				_vehicle setObjectTextureGlobal [_i, '#(rgb,8,8,3)color(0,1,0,0.8)'];
@@ -99,7 +112,11 @@ while { true } do {
 
 			while { build_confirmed == 1 && alive player } do {
 				_truedir = 90 - (getdir player);
-				_truepos = [((getpos player) select 0) + (_dist * (cos _truedir)), ((getpos player) select 1) + (_dist * (sin _truedir)),0];
+				if ((typeOf _vehicle) in KP_liberation_static_classnames) then {
+					_truepos = [((getposATL player) select 0) + (_dist * (cos _truedir)), ((getposATL player) select 1) + (_dist * (sin _truedir)),((getposATL player) select 2)];
+				} else {
+					_truepos = [((getpos player) select 0) + (_dist * (cos _truedir)), ((getpos player) select 1) + (_dist * (sin _truedir)),0];
+				};
 				_actualdir = ((getdir player) + build_rotation);
 				if ( _classname == "Land_Cargo_Patrol_V1_F" || _classname == "Land_PortableLight_single_F" ) then { _actualdir = _actualdir + 180 };
 				if ( _classname == FOB_typename ) then { _actualdir = _actualdir + 270 };
@@ -140,14 +157,14 @@ while { true } do {
 
 				private _remove_objects = [];
 				{
-					if ((_x isKindOf "Animal") || ((typeof _x) in GRLIB_ignore_colisions_when_building) || (_x == player) || (_x == _vehicle )) then {
+					if ((_x isKindOf "Animal") || ((typeof _x) in GRLIB_ignore_colisions_when_building) || (_x == player) || (_x == _vehicle) || ((typeOf _vehicle) in KP_liberation_static_classnames)) then {
 						_remove_objects pushback _x;
 					};
 				} foreach _near_objects;
 
 				private _remove_objects_25 = [];
 				{
-					if ((_x isKindOf "Animal") || ((typeof _x) in GRLIB_ignore_colisions_when_building) || (_x == player) || (_x == _vehicle ))  then {
+					if ((_x isKindOf "Animal") || ((typeof _x) in GRLIB_ignore_colisions_when_building) || (_x == player) || (_x == _vehicle) || ((typeOf _vehicle) in KP_liberation_static_classnames))  then {
 						_remove_objects_25 pushback _x;
 					};
 				} foreach _near_objects_25;
@@ -176,10 +193,18 @@ while { true } do {
 					if ( ((buildtype == 6) || (buildtype == 99)) && ((gridmode % 2) == 1) ) then {
 						_vehicle setpos [round (_truepos select 0),round (_truepos select 1), _truepos select 2];
 					} else {
-						_vehicle setpos _truepos;
+						if ((typeOf _vehicle) in KP_liberation_static_classnames) then {
+							_vehicle setPosATL _truepos;
+						} else {
+							_vehicle setpos _truepos;
+						};
 					};
-					if ( buildtype == 6 || buildtype == 99 ) then {
-						_vehicle setVectorUp [0,0,1];
+					if (buildtype == 6 || buildtype == 99 || _classname in KP_liberation_storage_buildings || _classname == KP_liberation_recycle_building || _classname == KP_liberation_air_vehicle_building) then {
+						if (KP_vector) then {
+							_vehicle setVectorUp [0,0,1];
+						} else {
+							_vehicle setVectorUp surfaceNormal position _vehicle;
+						};
 					} else {
 						_vehicle setVectorUp surfaceNormal position _vehicle;
 					};
@@ -221,11 +246,40 @@ while { true } do {
 			{ _x setpos [ 0,0,0 ] } foreach GRLIB_preview_spheres;
 
 			if ( !alive player || build_confirmed == 3 ) then {
+				private ["_price_s", "_price_a", "_price_f", "_nearfob", "_storage_areas"];
+				_price_s = ((build_lists select buildtype) select buildindex) select 1;
+				_price_a = ((build_lists select buildtype) select buildindex) select 2;
+				_price_f = ((build_lists select buildtype) select buildindex) select 3;
+
+				_nearfob = [] call F_getNearestFob;
+				_storage_areas = [_nearfob nearobjects (GRLIB_fob_range * 2), {(_x getVariable ["KP_liberation_storage_type",-1]) == 0}] call BIS_fnc_conditionalSelect;
+
+				_supplyCrates = ceil (_price_s / 100);
+				_ammoCrates = ceil (_price_a / 100);
+				_fuelCrates = ceil (_price_f / 100);
+				_crateSum = _supplyCrates + _ammoCrates + _fuelCrates;
+
+				_spaceSum = 0;
+
+				{
+					if (typeOf _x == KP_liberation_large_storage_building) then {
+						_spaceSum = _spaceSum + (count KP_liberation_large_storage_positions) - (count (attachedObjects _x));
+					};
+					if (typeOf _x == KP_liberation_small_storage_building) then {
+						_spaceSum = _spaceSum + (count KP_liberation_small_storage_positions) - (count (attachedObjects _x));
+					};
+				} forEach _storage_areas;
+
 				deleteVehicle _vehicle;
-				[ [ ((build_lists select buildtype) select buildindex) select 2 ] , "cancel_build_remote_call" ] call BIS_fnc_MP;
+
+				if (_spaceSum < _crateSum) then {
+					hint localize "STR_CANCEL_ERROR";
+				} else {
+					[_price_s, _price_a, _price_f, _storage_areas] remoteExec ["cancel_build_remote_call",2];
+				};
 			};
 
-			if ( build_confirmed == 2 ) then { //Actually Building it Here
+			if ( build_confirmed == 2 ) then {
 				_vehpos = getpos _vehicle;
 				_vehdir = getdir _vehicle;
 				deleteVehicle _vehicle;
@@ -233,24 +287,58 @@ while { true } do {
 				_vehicle = _classname createVehicle _truepos;
 				_vehicle allowDamage false;
 				_vehicle setdir _vehdir;
-				_vehicle setpos _truepos;
-				//clearWeaponCargoGlobal _vehicle;
-				//clearMagazineCargoGlobal _vehicle;
-				//clearItemCargoGlobal _vehicle;
-				//clearBackpackCargoGlobal _vehicle;
-				if ( buildtype == 6 || buildtype == 99 ) then {
-					_vehicle setVectorUp [0,0,1];
+				if ((typeOf _vehicle) in KP_liberation_static_classnames) then {
+					_vehicle setPosATL _truepos;
+				} else {
+					_vehicle setpos _truepos;
+				};
+				
+				if (!(_classname in KP_liberation_ace_crates) && KP_liberation_clear_cargo) then {
+					clearWeaponCargoGlobal _vehicle;
+					clearMagazineCargoGlobal _vehicle;
+					clearItemCargoGlobal _vehicle;
+					clearBackpackCargoGlobal _vehicle;
+				};
+				if (buildtype == 6 || buildtype == 99 || _classname in KP_liberation_storage_buildings || _classname == KP_liberation_recycle_building || _classname == KP_liberation_air_vehicle_building) then {
+					if (KP_vector) then {
+						_vehicle setVectorUp [0,0,1];
+					} else {
+						_vehicle setVectorUp surfaceNormal position _vehicle;
+					};
 				} else {
 					_vehicle setVectorUp surfaceNormal position _vehicle;
 				};
+
+				// Arty Supp deactivated for now
+				/*if ((KP_liberation_suppMod_enb > 0) && (_classname in KP_liberation_artySupp)) then {
+					[_vehicle] remoteExec ["arty_monitor", 2];
+				};*/
+
 				if ( (_classname in uavs) || manned ) then {
 					[ _vehicle ] call F_forceBluforCrew;
 				};
 
-				if ( _classname == FOB_box_typename ) then {
-					[ [_vehicle, 3000 ] , "F_setMass" ] call BIS_fnc_MP;
+				switch (_classname) do {
+					case FOB_box_typename: {[_vehicle, 3000] remoteExec ["F_setMass",_vehicle];};
+					case "Land_Medevac_house_V1_F";
+					case "Land_Medevac_HQ_V1_F": {_vehicle setVariable ["ace_medical_isMedicalFacility", true, true];};
+					case KP_liberation_recycle_building: {_vehicle setVariable ["ace_isRepairFacility", 1, true];};
+					case "Flag_White_F": {_vehicle setFlagTexture "res\kpflag.jpg";};
+					case KP_liberation_small_storage_building;
+					case KP_liberation_large_storage_building: {_vehicle setVariable ["KP_liberation_storage_type", 0, true];};
+					default {};
+				};
+				
+				if (_classname in KP_liberation_medical_vehicles) then {
+					_vehicle setVariable ["ace_medical_medicClass", 1, true];
 				};
 
+				if (_classname == "Land_HelipadSquare_F" || _classname == "Land_HelipadCircle_F" || _classname == "Land_HelipadRescue_F") then {
+					{
+						[_x,[[_vehicle],true]] remoteExec ["addCuratorEditableObjects",2];
+					} forEach allCurators;
+				};
+				
 				sleep 0.3;
 				_vehicle allowDamage true;
 				_vehicle setDamage 0;
@@ -264,8 +352,6 @@ while { true } do {
 					{ _x addMPEventHandler ["MPKilled", {_this spawn kill_manager}]; } foreach (crew _vehicle);
 
 				};
-				
-				if ( (_classname == "Land_Medevac_house_V1_F") || (_classname == "Land_Medevac_HQ_V1_F") ) then { _vehicle setVariable["ace_medical_isMedicalFacility",true,true]; }; //Should auto flag med fac. as ACE med fac.(s) Woop.
 			};
 
 			if ( _idactcancel != -1 ) then {
@@ -277,12 +363,15 @@ while { true } do {
 			if ( _idactplacebis != -1 ) then {
 				player removeAction _idactplacebis;
 			};
+			if ( _idactvector != -1 ) then {
+				player removeAction _idactvector;
+			};
 			player removeAction _idactrotate;
 			player removeAction _idactplace;
 
 			if(buildtype == 99) then {
 				_new_fob = getpos player;
-				[ [ _new_fob, false ] , "build_fob_remote_call" ] call BIS_fnc_MP;
+				[_new_fob, false] remoteExec ["build_fob_remote_call",2];
 				buildtype = 1;
 			};
 

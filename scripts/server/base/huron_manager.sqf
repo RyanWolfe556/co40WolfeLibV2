@@ -16,32 +16,28 @@ while { true } do {
 	if ( firstloop && !isNull _savedhuron ) then {
 		huron = _savedhuron;
 	} else {
-		if ( GRLIB_isAtlasPresent ) then {
-			huron = huron_typename createVehicle (getmarkerpos "ghost_spot");
-			huron enableSimulationGlobal false;
-			huron allowdamage false;
-			huron setDir 0;
-			huron setposasl [(getpos lhd select 0) -9, (getpos lhd select 1) + 62, (18.5   + (getposasl lhd select 2))];
-		} else {
-			huron = huron_typename createVehicle ( getpos huronspawn );
-			huron allowdamage false;
-			huron setpos ( getpos huronspawn );
-			huron setDir 0;
-		};
+		huron = huron_typename createVehicle (getposATL huronspawn);
+		huron enableSimulationGlobal false;
+		huron allowdamage false;
+		huron setDir (getDir huronspawn);
+		huron setPosATL (getposATL huronspawn);
 	};
 
 	firstloop = false;
 
 	huron AnimateDoor ["Door_rear_source", 1, true];
 	publicVariable "huron";
-	clearWeaponCargoGlobal huron;
-	clearMagazineCargoGlobal huron;
-	clearItemCargoGlobal huron;
-	clearBackpackCargoGlobal huron;
+	if(KP_liberation_clear_cargo) then {
+		clearWeaponCargoGlobal huron;
+		clearMagazineCargoGlobal huron;
+		clearItemCargoGlobal huron;
+		clearBackpackCargoGlobal huron;
+	};
 	huron setDamage 0;
 	sleep 0.5;
 	huron enableSimulationGlobal true;
 	huron setDamage 0;
+	huron setVariable ["ace_medical_medicClass", 1, true];
 	sleep 1.5;
 
 	huron setDamage 0;
@@ -58,9 +54,8 @@ while { true } do {
 
 	};
 
-	if (huron distance lhd < 500) then {
+	if (huron distance startbase < 500) then {
 		deletevehicle huron;
 	};
 	sleep 0.25;
-
 };
