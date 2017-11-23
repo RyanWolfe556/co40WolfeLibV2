@@ -49,7 +49,7 @@ if (alive _unit) then {
 		_unit disableAI "ANIM";
 		_unit disableAI "MOVE";
 		sleep 5;
-		[_unit, "AidlPsitMstpSnonWnonDnon_ground00"] remoteExec ["remote_call_switchmove"];
+		[_unit, "ApanPknlMstpSnonWnonDnon"] remoteExec ["remote_call_switchmove"];
 		[_unit] remoteExec ["prisonner_remote_call",2];
 		sleep 600;
 		deleteVehicle _unit;
