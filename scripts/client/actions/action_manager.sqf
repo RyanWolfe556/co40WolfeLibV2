@@ -5,6 +5,7 @@ private _idact_redeploy = -1;
 private _idact_tutorial = -1;
 private _idact_squad = -1;
 private _idact_commander = -1;
+private _waterboard = -1;
 private _idact_production = -1;
 private _idact_logistic = -1;
 private _idact_repackage = -1;
@@ -261,6 +262,22 @@ while {true} do {
 			_idact_commander = -1;
 		};
 	};
+	
+	
+	if ((player == ([] call F_getCommander) || [] call F_isAdmin) then {
+		if(_waterboard ==-1) then{
+			_waterboard = player addAction ["<t color='#007FFF'>Water Board</t>","scripts\client\actions\water_boarding.sqf","",-1003,false,true,"","" ];
+		};
+		} else {
+		if (_waterboard != -1) then {
+			player removeAction _waterboard;
+			_waterboard = -1;
+		};
+	};
+	
+	
+	
+	
 
 	if (!isNil("commandant")) then {
 		if ((player == commandant) && (isNull(getAssignedCuratorLogic commandant))) then {
